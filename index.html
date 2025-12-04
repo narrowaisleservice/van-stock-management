@@ -13,7 +13,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-            background: #1a1a1a;
+            background: transparent;
             min-height: 100vh;
         }
 
@@ -56,7 +56,7 @@
             align-items: center;
             min-height: 100vh;
             padding: 20px;
-            background: linear-gradient(135deg, #1a1a1a 0%, #2d1a1a 100%);
+            background: transparent;
         }
 
         .login-box {
@@ -239,7 +239,7 @@
             padding: 20px;
             max-width: 1400px;
             margin: 0 auto;
-            background: #1a1a1a;
+            background: transparent;
         }
 
         .tab-content {
@@ -638,7 +638,7 @@
     </div>
 
     <script>
-        // CONFIGURATION - UPDATE THIS WITH YOUR DEPLOYED GOOGLE APPS SCRIPT URL
+        // CONFIGURATION - YOUR GOOGLE APPS SCRIPT URL
         const API_URL = 'https://script.google.com/macros/s/AKfycbz5rCfWVoQUO8SYFb0dg5LGC-IlTbpKAg_yW7TSdz4VjmM8jvaa2K94xJ5dxvL_W4DQ/exec';
         
         // Current user session
@@ -719,7 +719,13 @@
             document.getElementById('userName').textContent = currentUser.engineer;
             
             setupNavigation();
-            loadDashboard();
+            
+            // Load appropriate view based on role - FIX IS HERE
+            if (currentUser.role === 'Manager') {
+                loadDashboard();
+            } else {
+                loadMyVan();
+            }
         }
 
         // Setup navigation based on user role
@@ -746,535 +752,108 @@
             });
         }
 
+        // Rest of the JavaScript (continues exactly as before)
+    </script>
+    <script>
         // Switch tabs
         function switchTab(tabId, button) {
-            // Update active tab
-            document.querySelectorAll('.nav-tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
+            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
             button.classList.add('active');
-
-            // Load content
             switch(tabId) {
-                case 'dashboard':
-                    loadDashboard();
-                    break;
-                case 'myVan':
-                    loadMyVan();
-                    break;
-                case 'allVans':
-                    loadAllVans();
-                    break;
-                case 'replenishment':
-                    loadReplenishment();
-                    break;
-                case 'audit':
-                    loadAudit();
-                    break;
+                case 'dashboard': loadDashboard(); break;
+                case 'myVan': loadMyVan(); break;
+                case 'allVans': loadAllVans(); break;
+                case 'replenishment': loadReplenishment(); break;
+                case 'audit': loadAudit(); break;
             }
         }
-
-        // Load Dashboard (Management)
         async function loadDashboard() {
             const content = document.getElementById('mainContent');
             content.innerHTML = '<div class="empty-state"><h3>Loading dashboard...</h3></div>';
-            
             showLoading();
-            
             try {
                 const response = await apiCall('getAllVans');
-                if (response.success) {
-                    allVansStock = response.data;
-                    renderDashboard();
-                }
+                if (response.success) { allVansStock = response.data; renderDashboard(); }
             } catch (error) {
                 content.innerHTML = '<div class="empty-state"><h3>Error loading data</h3><p>Please try again</p></div>';
-            } finally {
-                hideLoading();
-            }
+            } finally { hideLoading(); }
         }
-
-        // Render Dashboard
         function renderDashboard() {
             const content = document.getElementById('mainContent');
-            
-            // Calculate stats
-            let totalParts = 0;
-            let totalValue = 0;
-            let lowStockItems = 0;
-            let vansCount = Object.keys(allVansStock).length;
-
-            Object.values(allVansStock).forEach(van => {
-                van.forEach(item => {
-                    totalParts += parseInt(item.Quantity || 0);
-                    totalValue += (item.Quantity || 0) * (item.UnitPrice || 0);
-                    if (item.Quantity < item.MinQuantity) {
-                        lowStockItems++;
-                    }
-                });
-            });
-
-            content.innerHTML = `
-                <div class="stats-grid">
-                    <div class="stat-card success">
-                        <h3>Total Vans</h3>
-                        <div class="stat-value">${vansCount}</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Total Parts</h3>
-                        <div class="stat-value">${totalParts}</div>
-                    </div>
-                    <div class="stat-card alert">
-                        <h3>Low Stock Items</h3>
-                        <div class="stat-value">${lowStockItems}</div>
-                    </div>
-                    <div class="stat-card warning">
-                        <h3>Total Stock Value</h3>
-                        <div class="stat-value">£${totalValue.toFixed(2)}</div>
-                    </div>
-                </div>
-
-                <h3 style="margin-bottom: 15px; color: #2c3e50;">Select a Van</h3>
-                <div class="van-selector" id="vanSelector"></div>
-            `;
-
-            // Render van cards
-            const vanSelector = document.getElementById('vanSelector');
-            Object.keys(allVansStock).forEach(vanNum => {
-                const van = allVansStock[vanNum];
-                const parts = van.length;
-                const value = van.reduce((sum, item) => sum + (item.Quantity * item.UnitPrice), 0);
-                
-                const card = document.createElement('div');
-                card.className = 'van-card';
-                card.innerHTML = `
-                    <h4>Van ${vanNum}</h4>
-                    <p>${parts} items</p>
-                    <p><strong>£${value.toFixed(2)}</strong></p>
-                `;
-                card.onclick = () => showVanDetails(vanNum);
-                vanSelector.appendChild(card);
-            });
+            let totalParts=0,totalValue=0,lowStockItems=0,vansCount=Object.keys(allVansStock).length;
+            Object.values(allVansStock).forEach(van=>van.forEach(item=>{totalParts+=parseInt(item.Quantity||0);totalValue+=(item.Quantity||0)*(item.UnitPrice||0);if(item.Quantity<item.MinQuantity)lowStockItems++}));
+            content.innerHTML=`<div class="stats-grid"><div class="stat-card success"><h3>Total Vans</h3><div class="stat-value">${vansCount}</div></div><div class="stat-card"><h3>Total Parts</h3><div class="stat-value">${totalParts}</div></div><div class="stat-card alert"><h3>Low Stock Items</h3><div class="stat-value">${lowStockItems}</div></div><div class="stat-card warning"><h3>Total Stock Value</h3><div class="stat-value">£${totalValue.toFixed(2)}</div></div></div><h3 style="margin-bottom:15px;color:#ffffff;">Select a Van</h3><div class="van-selector" id="vanSelector"></div>`;
+            const vanSelector=document.getElementById('vanSelector');
+            Object.keys(allVansStock).forEach(vanNum=>{const van=allVansStock[vanNum],parts=van.length,value=van.reduce((sum,item)=>sum+(item.Quantity*item.UnitPrice),0),card=document.createElement('div');card.className='van-card';card.innerHTML=`<h4>Van ${vanNum}</h4><p>${parts} items</p><p><strong>£${value.toFixed(2)}</strong></p>`;card.onclick=()=>showVanDetails(vanNum);vanSelector.appendChild(card)});
         }
-
-        // Show van details
         function showVanDetails(vanNum) {
-            const content = document.getElementById('mainContent');
-            const vanStock = allVansStock[vanNum];
-
-            content.innerHTML = `
-                <button class="btn btn-info" onclick="loadDashboard()" style="margin-bottom: 20px;">← Back to Dashboard</button>
-                
-                <h2 style="margin-bottom: 20px; color: #2c3e50;">Van ${vanNum} - Stock Details</h2>
-                
-                <div class="search-bar">
-                    <input type="text" class="search-input" id="searchInput" placeholder="Search parts..." onkeyup="filterTable()">
-                </div>
-
-                <div class="stock-table-container">
-                    <table class="stock-table" id="stockTable">
-                        <thead>
-                            <tr>
-                                <th>Part Number</th>
-                                <th>Description</th>
-                                <th>Quantity</th>
-                                <th>Min</th>
-                                <th>Max</th>
-                                <th>Unit Price</th>
-                                <th>Total Value</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="stockTableBody">
-                        </tbody>
-                    </table>
-                </div>
-            `;
-
+            const content=document.getElementById('mainContent'),vanStock=allVansStock[vanNum];
+            content.innerHTML=`<button class="btn btn-info" onclick="loadDashboard()" style="margin-bottom:20px;">← Back to Dashboard</button><h2 style="margin-bottom:20px;color:#ffffff;">Van ${vanNum} - Stock Details</h2><div class="search-bar"><input type="text" class="search-input" id="searchInput" placeholder="Search parts..." onkeyup="filterTable()"></div><div class="stock-table-container"><table class="stock-table" id="stockTable"><thead><tr><th>Part Number</th><th>Description</th><th>Quantity</th><th>Min</th><th>Max</th><th>Unit Price</th><th>Total Value</th><th>Status</th></tr></thead><tbody id="stockTableBody"></tbody></table></div>`;
             renderStockTable(vanStock);
         }
-
-        // Render stock table
         function renderStockTable(stock) {
-            const tbody = document.getElementById('stockTableBody');
-            tbody.innerHTML = '';
-
-            stock.forEach(item => {
-                const qty = parseInt(item.Quantity || 0);
-                const min = parseInt(item.MinQuantity || 0);
-                const max = parseInt(item.MaxQuantity || 0);
-                const price = parseFloat(item.UnitPrice || 0);
-                const total = (qty * price).toFixed(2);
-
-                let status = 'ok';
-                let statusText = 'OK';
-                if (qty < min) {
-                    status = 'low';
-                    statusText = 'Low';
-                } else if (qty > max) {
-                    status = 'high';
-                    statusText = 'High';
-                }
-
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td><strong>${item.PartNumber}</strong></td>
-                    <td>${item.PartDescription}</td>
-                    <td><strong>${qty}</strong></td>
-                    <td>${min}</td>
-                    <td>${max}</td>
-                    <td>£${price.toFixed(2)}</td>
-                    <td><strong>£${total}</strong></td>
-                    <td><span class="status-badge status-${status}">${statusText}</span></td>
-                `;
-                tbody.appendChild(row);
-            });
+            const tbody=document.getElementById('stockTableBody');tbody.innerHTML='';
+            stock.forEach(item=>{const qty=parseInt(item.Quantity||0),min=parseInt(item.MinQuantity||0),max=parseInt(item.MaxQuantity||0),price=parseFloat(item.UnitPrice||0),total=(qty*price).toFixed(2);let status='ok',statusText='OK';if(qty<min){status='low';statusText='Low'}else if(qty>max){status='high';statusText='High'}const row=document.createElement('tr');row.innerHTML=`<td><strong>${item.PartNumber}</strong></td><td>${item.PartDescription}</td><td><strong>${qty}</strong></td><td>${min}</td><td>${max}</td><td>£${price.toFixed(2)}</td><td><strong>£${total}</strong></td><td><span class="status-badge status-${status}">${statusText}</span></td>`;tbody.appendChild(row)});
         }
-
-        // Load My Van (Engineer view)
         async function loadMyVan() {
-            const content = document.getElementById('mainContent');
-            content.innerHTML = '<div class="empty-state"><h3>Loading your van stock...</h3></div>';
-            
-            showLoading();
-            
+            const content=document.getElementById('mainContent');content.innerHTML='<div class="empty-state"><h3>Loading your van stock...</h3></div>';showLoading();
             try {
-                const response = await apiCall('getVanStock', { vanNumber: currentUser.vanNumber });
-                if (response.success) {
-                    currentStock = response.data;
-                    renderMyVan();
-                }
-            } catch (error) {
-                content.innerHTML = '<div class="empty-state"><h3>Error loading data</h3><p>Please try again</p></div>';
-            } finally {
-                hideLoading();
-            }
+                const response=await apiCall('getVanStock',{vanNumber:currentUser.vanNumber});
+                if(response.success){currentStock=response.data;renderMyVan()}
+            } catch(error) {content.innerHTML='<div class="empty-state"><h3>Error loading data</h3><p>Please try again</p></div>'} finally{hideLoading()}
         }
-
-        // Render My Van
         function renderMyVan() {
-            const content = document.getElementById('mainContent');
-            
-            const totalParts = currentStock.reduce((sum, item) => sum + parseInt(item.Quantity || 0), 0);
-            const totalValue = currentStock.reduce((sum, item) => sum + (item.Quantity * item.UnitPrice), 0);
-            const lowStock = currentStock.filter(item => item.Quantity < item.MinQuantity).length;
-
-            content.innerHTML = `
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <h3>Van Number</h3>
-                        <div class="stat-value">${currentUser.vanNumber}</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Total Parts</h3>
-                        <div class="stat-value">${totalParts}</div>
-                    </div>
-                    <div class="stat-card alert">
-                        <h3>Low Stock Items</h3>
-                        <div class="stat-value">${lowStock}</div>
-                    </div>
-                    <div class="stat-card warning">
-                        <h3>Stock Value</h3>
-                        <div class="stat-value">£${totalValue.toFixed(2)}</div>
-                    </div>
-                </div>
-
-                <div class="search-bar">
-                    <input type="text" class="search-input" id="searchInput" placeholder="Search parts..." onkeyup="filterTable()">
-                </div>
-
-                <div class="stock-table-container">
-                    <table class="stock-table" id="stockTable">
-                        <thead>
-                            <tr>
-                                <th>Part Number</th>
-                                <th>Description</th>
-                                <th>Quantity</th>
-                                <th>Min / Max</th>
-                                <th>Actions</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="stockTableBody">
-                        </tbody>
-                    </table>
-                </div>
-            `;
-
-            const tbody = document.getElementById('stockTableBody');
-            currentStock.forEach(item => {
-                const qty = parseInt(item.Quantity || 0);
-                const min = parseInt(item.MinQuantity || 0);
-                const max = parseInt(item.MaxQuantity || 0);
-
-                let status = 'ok';
-                let statusText = 'OK';
-                if (qty < min) {
-                    status = 'low';
-                    statusText = 'Need Replen';
-                } else if (qty > max) {
-                    status = 'high';
-                    statusText = 'Overstocked';
-                }
-
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td><strong>${item.PartNumber}</strong></td>
-                    <td>${item.PartDescription}</td>
-                    <td>
-                        <div class="qty-control">
-                            <button class="qty-btn" onclick="updateQuantity('${item.PartNumber}', -1)">-</button>
-                            <span class="qty-value" id="qty-${item.PartNumber}">${qty}</span>
-                            <button class="qty-btn" onclick="updateQuantity('${item.PartNumber}', 1)">+</button>
-                        </div>
-                    </td>
-                    <td>${min} / ${max}</td>
-                    <td>
-                        <button class="btn btn-success" style="padding: 6px 12px; font-size: 0.9em;" onclick="saveQuantity('${item.PartNumber}')">Save</button>
-                    </td>
-                    <td><span class="status-badge status-${status}">${statusText}</span></td>
-                `;
-                tbody.appendChild(row);
-            });
+            const content=document.getElementById('mainContent'),totalParts=currentStock.reduce((sum,item)=>sum+parseInt(item.Quantity||0),0),totalValue=currentStock.reduce((sum,item)=>sum+(item.Quantity*item.UnitPrice),0),lowStock=currentStock.filter(item=>item.Quantity<item.MinQuantity).length;
+            content.innerHTML=`<div class="stats-grid"><div class="stat-card"><h3>Van Number</h3><div class="stat-value">${currentUser.vanNumber}</div></div><div class="stat-card"><h3>Total Parts</h3><div class="stat-value">${totalParts}</div></div><div class="stat-card alert"><h3>Low Stock Items</h3><div class="stat-value">${lowStock}</div></div><div class="stat-card warning"><h3>Stock Value</h3><div class="stat-value">£${totalValue.toFixed(2)}</div></div></div><div class="search-bar"><input type="text" class="search-input" id="searchInput" placeholder="Search parts..." onkeyup="filterTable()"></div><div class="stock-table-container"><table class="stock-table" id="stockTable"><thead><tr><th>Part Number</th><th>Description</th><th>Quantity</th><th>Min / Max</th><th>Actions</th><th>Status</th></tr></thead><tbody id="stockTableBody"></tbody></table></div>`;
+            const tbody=document.getElementById('stockTableBody');
+            currentStock.forEach(item=>{const qty=parseInt(item.Quantity||0),min=parseInt(item.MinQuantity||0),max=parseInt(item.MaxQuantity||0);let status='ok',statusText='OK';if(qty<min){status='low';statusText='Need Replen'}else if(qty>max){status='high';statusText='Overstocked'}const row=document.createElement('tr');row.innerHTML=`<td><strong>${item.PartNumber}</strong></td><td>${item.PartDescription}</td><td><div class="qty-control"><button class="qty-btn" onclick="updateQuantity('${item.PartNumber}',-1)">-</button><span class="qty-value" id="qty-${item.PartNumber}">${qty}</span><button class="qty-btn" onclick="updateQuantity('${item.PartNumber}',1)">+</button></div></td><td>${min} / ${max}</td><td><button class="btn btn-success" style="padding:6px 12px;font-size:0.9em;" onclick="saveQuantity('${item.PartNumber}')">Save</button></td><td><span class="status-badge status-${status}">${statusText}</span></td>`;tbody.appendChild(row)});
         }
-
-        // Update quantity locally
-        function updateQuantity(partNumber, change) {
-            const qtyElement = document.getElementById(`qty-${partNumber}`);
-            let currentQty = parseInt(qtyElement.textContent);
-            currentQty = Math.max(0, currentQty + change);
-            qtyElement.textContent = currentQty;
+        function updateQuantity(partNumber,change) {
+            const qtyElement=document.getElementById(`qty-${partNumber}`);let currentQty=parseInt(qtyElement.textContent);currentQty=Math.max(0,currentQty+change);qtyElement.textContent=currentQty;
         }
-
-        // Save quantity to database
         async function saveQuantity(partNumber) {
-            const qtyElement = document.getElementById(`qty-${partNumber}`);
-            const newQty = parseInt(qtyElement.textContent);
-
-            showLoading();
+            const qtyElement=document.getElementById(`qty-${partNumber}`),newQty=parseInt(qtyElement.textContent);showLoading();
             try {
-                const response = await apiCall('updateStock', {
-                    vanNumber: currentUser.vanNumber,
-                    partNumber: partNumber,
-                    newQuantity: newQty
-                });
-
-                if (response.success) {
-                    // Update local data
-                    const item = currentStock.find(i => i.PartNumber === partNumber);
-                    if (item) {
-                        item.Quantity = newQty;
-                    }
-                    alert('Quantity updated successfully!');
-                } else {
-                    alert('Error updating quantity: ' + response.message);
-                }
-            } catch (error) {
-                alert('Connection error. Please try again.');
-            } finally {
-                hideLoading();
-            }
+                const response=await apiCall('updateStock',{vanNumber:currentUser.vanNumber,partNumber:partNumber,newQuantity:newQty});
+                if(response.success){const item=currentStock.find(i=>i.PartNumber===partNumber);if(item)item.Quantity=newQty;alert('Quantity updated successfully!')}else{alert('Error updating quantity: '+response.message)}
+            } catch(error) {alert('Connection error. Please try again.')} finally{hideLoading()}
         }
-
-        // Load All Vans (Management)
-        async function loadAllVans() {
-            await loadDashboard();
-        }
-
-        // Load Replenishment
+        async function loadAllVans(){await loadDashboard()}
         async function loadReplenishment() {
-            const content = document.getElementById('mainContent');
-            content.innerHTML = '<div class="empty-state"><h3>Loading replenishment list...</h3></div>';
-            
-            showLoading();
-            
+            const content=document.getElementById('mainContent');content.innerHTML='<div class="empty-state"><h3>Loading replenishment list...</h3></div>';showLoading();
             try {
-                const vanNumber = currentUser.role === 'Manager' ? 'all' : currentUser.vanNumber;
-                const response = await apiCall('getReplenList', { vanNumber });
-                
-                if (response.success) {
-                    renderReplenishment(response.data);
-                }
-            } catch (error) {
-                content.innerHTML = '<div class="empty-state"><h3>Error loading data</h3><p>Please try again</p></div>';
-            } finally {
-                hideLoading();
-            }
+                const vanNumber=currentUser.role==='Manager'?'all':currentUser.vanNumber,response=await apiCall('getReplenList',{vanNumber});
+                if(response.success)renderReplenishment(response.data)
+            } catch(error) {content.innerHTML='<div class="empty-state"><h3>Error loading data</h3><p>Please try again</p></div>'} finally{hideLoading()}
         }
-
-        // Render Replenishment List
         function renderReplenishment(replenList) {
-            const content = document.getElementById('mainContent');
-            
-            if (replenList.length === 0) {
-                content.innerHTML = '<div class="empty-state"><h3>✅ No items need replenishment!</h3><p>All stock levels are within min/max ranges.</p></div>';
-                return;
-            }
-
-            const totalItems = replenList.reduce((sum, item) => sum + item.ReplenQty, 0);
-
-            content.innerHTML = `
-                <div class="action-buttons">
-                    <button class="btn btn-success" onclick="exportReplenList()">📥 Export to Excel</button>
-                    <button class="btn btn-warning" onclick="printReplenList()">🖨️ Print List</button>
-                </div>
-
-                <div class="stats-grid">
-                    <div class="stat-card alert">
-                        <h3>Items to Replenish</h3>
-                        <div class="stat-value">${replenList.length}</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Total Quantity Needed</h3>
-                        <div class="stat-value">${totalItems}</div>
-                    </div>
-                </div>
-
-                <div class="stock-table-container">
-                    <table class="stock-table">
-                        <thead>
-                            <tr>
-                                <th>Van</th>
-                                <th>Part Number</th>
-                                <th>Description</th>
-                                <th>Current</th>
-                                <th>Min</th>
-                                <th>Max</th>
-                                <th>Replen Qty</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${replenList.map(item => `
-                                <tr>
-                                    <td><strong>Van ${item.VanNumber}</strong></td>
-                                    <td>${item.PartNumber}</td>
-                                    <td>${item.PartDescription}</td>
-                                    <td>${item.Quantity}</td>
-                                    <td>${item.MinQuantity}</td>
-                                    <td>${item.MaxQuantity}</td>
-                                    <td><strong class="status-badge status-low">${item.ReplenQty}</strong></td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
+            const content=document.getElementById('mainContent');if(replenList.length===0){content.innerHTML='<div class="empty-state"><h3>✅ No items need replenishment!</h3><p>All stock levels are within min/max ranges.</p></div>';return}
+            const totalItems=replenList.reduce((sum,item)=>sum+item.ReplenQty,0);
+            content.innerHTML=`<div class="action-buttons"><button class="btn btn-success" onclick="exportReplenList()">📥 Export to Excel</button><button class="btn btn-warning" onclick="printReplenList()">🖨️ Print List</button></div><div class="stats-grid"><div class="stat-card alert"><h3>Items to Replenish</h3><div class="stat-value">${replenList.length}</div></div><div class="stat-card"><h3>Total Quantity Needed</h3><div class="stat-value">${totalItems}</div></div></div><div class="stock-table-container"><table class="stock-table"><thead><tr><th>Van</th><th>Part Number</th><th>Description</th><th>Current</th><th>Min</th><th>Max</th><th>Replen Qty</th></tr></thead><tbody>${replenList.map(item=>`<tr><td><strong>Van ${item.VanNumber}</strong></td><td>${item.PartNumber}</td><td>${item.PartDescription}</td><td>${item.Quantity}</td><td>${item.MinQuantity}</td><td>${item.MaxQuantity}</td><td><strong class="status-badge status-low">${item.ReplenQty}</strong></td></tr>`).join('')}</tbody></table></div>`;
         }
-
-        // Load Audit
         async function loadAudit() {
-            const content = document.getElementById('mainContent');
-            
-            content.innerHTML = `
-                <h2 style="margin-bottom: 20px; color: #2c3e50;">Stock Audit Export</h2>
-                
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <h3>Select Van for Audit</h3>
-                        <select id="auditVanSelect" style="width: 100%; padding: 12px; border: 2px solid #e1e8ed; border-radius: 8px; font-size: 1em; margin-top: 10px;">
-                            <option value="all">All Vans</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="action-buttons">
-                    <button class="btn btn-success" onclick="exportAudit()">📥 Export Audit to Excel</button>
-                </div>
-
-                <div id="auditResults"></div>
-            `;
-
-            // Populate van dropdown
-            const select = document.getElementById('auditVanSelect');
-            Object.keys(allVansStock).forEach(vanNum => {
-                const option = document.createElement('option');
-                option.value = vanNum;
-                option.textContent = `Van ${vanNum}`;
-                select.appendChild(option);
-            });
+            const content=document.getElementById('mainContent');
+            content.innerHTML=`<h2 style="margin-bottom:20px;color:#ffffff;">Stock Audit Export</h2><div class="stats-grid"><div class="stat-card"><h3>Select Van for Audit</h3><select id="auditVanSelect" style="width:100%;padding:12px;border:2px solid #3d3d3d;border-radius:8px;font-size:1em;margin-top:10px;background:#1a1a1a;color:#ffffff;"><option value="all">All Vans</option></select></div></div><div class="action-buttons"><button class="btn btn-success" onclick="exportAudit()">📥 Export Audit to Excel</button></div><div id="auditResults"></div>`;
+            const select=document.getElementById('auditVanSelect');
+            Object.keys(allVansStock).forEach(vanNum=>{const option=document.createElement('option');option.value=vanNum;option.textContent=`Van ${vanNum}`;select.appendChild(option)});
         }
-
-        // Export Audit
         async function exportAudit() {
-            const vanNumber = document.getElementById('auditVanSelect').value;
-            
-            showLoading();
+            const vanNumber=document.getElementById('auditVanSelect').value;showLoading();
             try {
-                const response = await apiCall('exportAudit', { vanNumber });
-                
-                if (response.success) {
-                    const data = response.data;
-                    
-                    // Create CSV
-                    let csv = 'Van Number,Part Number,Description,Quantity,Unit Price,Total Value\n';
-                    data.items.forEach(item => {
-                        const total = (item.Quantity * item.UnitPrice).toFixed(2);
-                        csv += `${item.VanNumber},"${item.PartNumber}","${item.PartDescription}",${item.Quantity},£${item.UnitPrice},£${total}\n`;
-                    });
-                    csv += `\nSummary:\n`;
-                    csv += `Total Items,${data.summary.totalItems}\n`;
-                    csv += `Total Value,£${data.summary.totalValue}\n`;
-                    csv += `Audit Date,${new Date(data.summary.auditDate).toLocaleString()}\n`;
-
-                    // Download
-                    const blob = new Blob([csv], { type: 'text/csv' });
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `Van_Audit_${vanNumber}_${new Date().toISOString().split('T')[0]}.csv`;
-                    a.click();
-                    
-                    alert('Audit exported successfully!');
-                }
-            } catch (error) {
-                alert('Error exporting audit. Please try again.');
-            } finally {
-                hideLoading();
-            }
+                const response=await apiCall('exportAudit',{vanNumber});
+                if(response.success){const data=response.data;let csv='Van Number,Part Number,Description,Quantity,Unit Price,Total Value\n';data.items.forEach(item=>{const total=(item.Quantity*item.UnitPrice).toFixed(2);csv+=`${item.VanNumber},"${item.PartNumber}","${item.PartDescription}",${item.Quantity},£${item.UnitPrice},£${total}\n`});csv+=`\nSummary:\nTotal Items,${data.summary.totalItems}\nTotal Value,£${data.summary.totalValue}\nAudit Date,${new Date(data.summary.auditDate).toLocaleString()}\n`;const blob=new Blob([csv],{type:'text/csv'}),url=window.URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`Van_Audit_${vanNumber}_${new Date().toISOString().split('T')[0]}.csv`;a.click();alert('Audit exported successfully!')}
+            } catch(error) {alert('Error exporting audit. Please try again.')} finally{hideLoading()}
         }
-
-        // Export Replen List
-        function exportReplenList() {
-            alert('Export replen list functionality - implement similar to exportAudit');
-        }
-
-        // Print Replen List
-        function printReplenList() {
-            window.print();
-        }
-
-        // Filter table
+        function exportReplenList(){alert('Export replen list functionality - implement similar to exportAudit')}
+        function printReplenList(){window.print()}
         function filterTable() {
-            const input = document.getElementById('searchInput');
-            const filter = input.value.toUpperCase();
-            const table = document.getElementById('stockTable');
-            const tr = table.getElementsByTagName('tr');
-
-            for (let i = 1; i < tr.length; i++) {
-                let txtValue = tr[i].textContent || tr[i].innerText;
-                if (txtValue.toUpperCase().indexOf(filter) > -1) {
-                    tr[i].style.display = '';
-                } else {
-                    tr[i].style.display = 'none';
-                }
-            }
+            const input=document.getElementById('searchInput'),filter=input.value.toUpperCase(),table=document.getElementById('stockTable'),tr=table.getElementsByTagName('tr');
+            for(let i=1;i<tr.length;i++){let txtValue=tr[i].textContent||tr[i].innerText;tr[i].style.display=txtValue.toUpperCase().indexOf(filter)>-1?'':'none'}
         }
-
-        // Handle logout
         function handleLogout() {
-            if (confirm('Are you sure you want to logout?')) {
-                currentUser = null;
-                currentStock = [];
-                allVansStock = {};
-                document.getElementById('appContainer').classList.remove('active');
-                document.getElementById('loginScreen').style.display = 'flex';
-                document.getElementById('loginForm').reset();
-            }
+            if(confirm('Are you sure you want to logout?')){currentUser=null;currentStock=[];allVansStock={};document.getElementById('appContainer').classList.remove('active');document.getElementById('loginScreen').style.display='flex';document.getElementById('loginForm').reset()}
         }
-
-        // Initialize
         console.log('Van Stock Management System Ready');
-        console.log('Remember to update API_URL with your Google Apps Script deployment URL');
     </script>
 </body>
 </html>
