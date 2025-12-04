@@ -1,0 +1,60 @@
+PartNumber,PartDescription,StandardMin,StandardMax,UnitPrice,Category
+55490.01.000,Steer Contactor,1,3,33.54449999999999,General
+55490.02.000,Hydraulic Contactor,1,3,96.4755,General
+55490.03.000,Regen Contactor,1,1,141.933,General
+55490.04.000,Forward / Reverse Contactor,1,1,274.659,General
+55490.06.000,K6 Line Contactor (AC),1,1,107.36549999999998,General
+55490.07.000,Seat Switch Contactor,1,1,22.968,General
+55490.08.000,K6 Line Contactor (ACiON),1,1,64.3005,General
+55490.02.008,Top Cover,1,1,23.892,General
+7671.01.000,Standard Roller Bearing,4,12,56.099999999999994,General
+7773.01.000,HD Roller Bearing 88.63,4,12,94.875,General
+7773.02.000,HD Roller Bearing 89.03,4,12,143.54999999999998,General
+2015.00.001,Fork Pin Kit,1,3,14.024999999999999,General
+2015.00.002,Fork Pin Kit (Round),1,3,33.6765,General
+3729.61,Link Hose - Spool Valve Flow Control,1,1,32.4885,General
+41282.02,Oil Tank Gasket,1,3,3.1845,General
+41323.44,Extension Cable 70mm,1,3,198,General
+41323.53,Battery Harness 50mm,1,3,70.125,General
+41348.06,Lift Lever,2,6,9.3225,General
+41348.07,Tilt Lever,2,6,9.7515,General
+41348.08,S/Shift Lever,2,6,9.817499999999999,General
+41404.2,Mainlift Cylinder Seal Kit (GKN / UK),1,3,30.326999999999998,General
+41404.3,Mainlift Cylinder Seal Kit (TW),1,4,25.41,General
+41405.2,Freelift Cylinder Seal Kit (UK/GKN),1,3,28.6935,General
+41405.3,Freelift Cylinder Seal Kit (TW),1,3,31.531499999999998,General
+4959.02.000,Return Filter Element,1,1,26.895,General
+4959.03.000,Breather Element,1,1,9.2565,General
+4970.03.000,Flow Regulator,1,1,36.036,General
+4997.21.006,Bolzoni S/S Seal Kit,1,1,39.765,General
+4997.44.005,S/S Bearing Inner Plastic,1,3,7.689,General
+4997.44.014,S/S Seal Kit KAUP,1,3,23.1825,General
+4997.44.022,S/S Seal Housing,1,3,33,General
+4998.01.000,Rotary Shaft Seal Wheel Hub,1,1,4.8675,General
+5202.08.000,Direction Lever,1,1,90.35399999999998,General
+5277.01.000,Burgees Microswitch,2,6,10.328999999999999,General
+5454.02.007,Brush,4,12,32.4225,General
+55219.01.000,Limit Switch Contact & Cable,1,1,67.056,General
+55262.25.000,Contact Tip Kit - Steer / Lift,1,1,113.60249999999998,General
+55309.02.003,Brush Assy,1,1,23.281499999999998,General
+55309.04.001,Set of Carbon Brushes / Steer (4),1,3,49.236,General
+55385.12.000,DIN320A Battery Plug Male Pin / Female Housing,1,1,30.525,General
+55385.13.000,DIN320A Battery Plug Female Pin / Male Housing,2,6,29.7,General
+55421.15.000,LED Worklamp,1,3,63.9375,General
+55481.01.001,Accelerator Pedal Gen 1,1,4,159.951,General
+55498.01.000,10A Red Pushbutton,2,6,36.811499999999995,General
+55521.01.000,Single N/O Contact Block,1,1,8.035499999999999,General
+55521.02.000,Single N/C Contact Block,1,3,5.247,General
+5608.01.0002,Ronis 455 Key,1,3,8.398499999999999,General
+5676.10.000,Husky Pup Flashing Beacon,1,3,28.875,General
+5849.02.000,48v 11 Pin Relay,2,6,21.615,General
+7404.02.000,Plastimo Wide Angle Mirror,1,3,36.7125,General
+7629.03.000,Rotation Buffer,2,6,2.409,General
+7633.19.001,Seat Microswitch,1,3,82.08749999999999,General
+7638.05.000,Lift Lever Knob,2,6,4.034249999999999,General
+7638.06.000,Tilt Lever Knob,2,6,4.054875,General
+7638.07.000,S/Shift Lever Knob,2,6,4.071375,General
+7668.01.000,Primary Hand Brake Cable,1,1,23.174249999999997,General
+7738.07.001,Wheel Slave Cylinder,1,3,141.372,General
+7738.08.000,Brake Cable,1,3,14.264249999999999,General
+55492.08.001,Encoder Sensor,1,3,41.382,General
