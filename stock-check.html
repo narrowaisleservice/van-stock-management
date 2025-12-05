@@ -17,7 +17,6 @@
             min-height: 100vh;
         }
 
-        /* Loading */
         .loading {
             display: none;
             position: fixed;
@@ -56,14 +55,12 @@
             font-size: 1.2em;
         }
 
-        /* Container */
         .container {
             max-width: 900px;
             margin: 0 auto;
             padding: 20px;
         }
 
-        /* Header */
         .header {
             background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
             color: white;
@@ -85,7 +82,6 @@
             font-size: 1.1em;
         }
 
-        /* Login Screen */
         .login-screen {
             display: block;
         }
@@ -167,7 +163,6 @@
             display: block;
         }
 
-        /* Check Form */
         .check-form {
             display: none;
         }
@@ -230,7 +225,6 @@
             font-size: 0.9em;
         }
 
-        /* Part Cards */
         .parts-container {
             display: grid;
             gap: 20px;
@@ -312,7 +306,6 @@
             background: rgba(39, 174, 96, 0.1);
         }
 
-        /* Notes Section */
         .notes-section {
             background: #2d2d2d;
             padding: 25px;
@@ -345,7 +338,6 @@
             box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.2);
         }
 
-        /* Submit Button */
         .submit-section {
             text-align: center;
         }
@@ -374,7 +366,6 @@
             box-shadow: none;
         }
 
-        /* Results Screen */
         .results-screen {
             display: none;
         }
@@ -508,21 +499,17 @@
             box-shadow: 0 6px 20px rgba(139, 0, 0, 0.4);
         }
 
-        /* Responsive */
         @media (max-width: 768px) {
             .part-header {
                 grid-template-columns: 1fr;
             }
-
             .count-input-group {
                 flex-direction: column;
                 align-items: stretch;
             }
-
             .count-input-group label {
                 min-width: auto;
             }
-
             .disc-values {
                 grid-template-columns: 1fr;
             }
@@ -530,20 +517,17 @@
     </style>
 </head>
 <body>
-    <!-- Loading -->
     <div class="loading" id="loading">
         <div class="spinner"></div>
         <div class="loading-text">Processing...</div>
     </div>
 
     <div class="container">
-        <!-- Header -->
         <div class="header">
             <h1>📋 Stock Check</h1>
             <p class="subtitle">Physical Stock Count Audit</p>
         </div>
 
-        <!-- Login Screen -->
         <div class="login-screen" id="loginScreen">
             <div class="login-box">
                 <h2 style="color: #ffffff; margin-bottom: 25px; text-align: center;">Engineer Login</h2>
@@ -582,7 +566,6 @@
             </div>
         </div>
 
-        <!-- Check Form -->
         <div class="check-form" id="checkForm">
             <div class="info-banner">
                 <h3>🚐 Van <span id="vanNumber"></span> Stock Check</h3>
@@ -597,9 +580,7 @@
                 </div>
             </div>
 
-            <div class="parts-container" id="partsContainer">
-                <!-- Parts will be dynamically added here -->
-            </div>
+            <div class="parts-container" id="partsContainer"></div>
 
             <div class="notes-section">
                 <h3>📝 Additional Notes (Optional)</h3>
@@ -614,7 +595,6 @@
             </div>
         </div>
 
-        <!-- Results Screen -->
         <div class="results-screen" id="resultsScreen">
             <div class="success-banner">
                 <div class="success-icon">✓</div>
@@ -638,7 +618,6 @@
                         <div class="stat-value" id="accuracy">0%</div>
                     </div>
                 </div>
-
                 <div id="discrepancySection"></div>
             </div>
 
@@ -649,7 +628,6 @@
     </div>
 
     <script>
-        // API Configuration - USING SAME METHOD AS VAN STOCK PRO
         const API_URL = 'https://script.google.com/macros/s/AKfycbz5rCfWVoQUO8SYFb0dg5LGC-IlTbpKAg_yW7TSdz4VjmM8jvaa2K94xJ5dxvL_W4DQ/exec';
         
         let currentUser = null;
@@ -664,25 +642,38 @@
             document.getElementById('loading').classList.remove('active');
         }
 
-        // FIXED API CALL - Using same method as Van Stock Pro
+        // Simple GET API calls for login and loading stock
         async function apiCall(action, params = {}) {
             try {
                 const url = new URL(API_URL);
                 url.searchParams.append('action', action);
                 Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
                 
-                const response = await fetch(url.toString(), {
-                    method: 'GET',
-                    mode: 'cors'
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Network response was not ok: ' + response.status);
-                }
-                
+                const response = await fetch(url.toString(), { method: 'GET' });
+                if (!response.ok) throw new Error('Network error');
                 return await response.json();
             } catch (error) {
                 console.error('API Error:', error);
+                throw error;
+            }
+        }
+
+        // Special POST method for submitting audit (handles large data better)
+        async function submitAuditAPI(auditData) {
+            try {
+                const url = API_URL + '?action=submitStockCheck&data=' + encodeURIComponent(JSON.stringify(auditData));
+                
+                const response = await fetch(url, { method: 'GET' });
+                
+                if (!response.ok) {
+                    throw new Error('Network error: ' + response.status);
+                }
+                
+                const result = await response.json();
+                console.log('Submit response:', result);
+                return result;
+            } catch (error) {
+                console.error('Submit error:', error);
                 throw error;
             }
         }
@@ -702,7 +693,7 @@
                 if (response.success) {
                     currentUser = response.data;
                     if (currentUser.role === 'Manager') {
-                        errorDiv.textContent = 'Management accounts cannot perform stock checks. Please use an engineer account.';
+                        errorDiv.textContent = 'Management accounts cannot perform stock checks.';
                         errorDiv.classList.add('show');
                         hideLoading();
                         return false;
@@ -713,8 +704,7 @@
                     errorDiv.classList.add('show');
                 }
             } catch (error) {
-                console.error('Login error:', error);
-                errorDiv.textContent = 'Connection error. Please check your internet and try again.';
+                errorDiv.textContent = 'Connection error. Check internet and try again.';
                 errorDiv.classList.add('show');
             } finally {
                 hideLoading();
@@ -730,11 +720,10 @@
                     vanStock = response.data;
                     showCheckForm();
                 } else {
-                    alert('Error loading stock data: ' + response.message);
+                    alert('Error loading stock: ' + response.message);
                 }
             } catch (error) {
-                console.error('Load stock error:', error);
-                alert('Error loading stock data. Please try again.');
+                alert('Error loading stock. Please try again.');
             } finally {
                 hideLoading();
             }
@@ -836,20 +825,22 @@
                 });
             });
             
+            console.log('Submitting audit data:', stockCheckData);
             showLoading();
+            
             try {
-                const response = await apiCall('submitStockCheck', {
-                    data: JSON.stringify(stockCheckData)
-                });
+                const response = await submitAuditAPI(stockCheckData);
                 
                 if (response.success) {
+                    console.log('Success! Audit ID:', response.data.auditID);
                     showResults();
                 } else {
-                    alert('Error submitting stock check: ' + response.message);
+                    alert('Error: ' + response.message);
+                    console.error('Server error:', response);
                 }
             } catch (error) {
-                console.error('Submit error:', error);
-                alert('Connection error submitting stock check. Please try again.');
+                console.error('Submit failed:', error);
+                alert('Connection error submitting stock check.\n\nError: ' + error.message + '\n\nPlease check your internet and try again.');
             } finally {
                 hideLoading();
             }
@@ -895,7 +886,7 @@
             }
         }
 
-        console.log('Stock Check Tool Ready - Using GET method like Van Stock Pro');
+        console.log('Stock Check Ready - API:', API_URL);
     </script>
 </body>
 </html>
