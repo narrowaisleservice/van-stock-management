@@ -649,7 +649,7 @@
     </div>
 
     <script>
-        // API Configuration
+        // API Configuration - USING SAME METHOD AS VAN STOCK PRO
         const API_URL = 'https://script.google.com/macros/s/AKfycbz5rCfWVoQUO8SYFb0dg5LGC-IlTbpKAg_yW7TSdz4VjmM8jvaa2K94xJ5dxvL_W4DQ/exec';
         
         let currentUser = null;
@@ -664,13 +664,22 @@
             document.getElementById('loading').classList.remove('active');
         }
 
+        // FIXED API CALL - Using same method as Van Stock Pro
         async function apiCall(action, params = {}) {
             try {
                 const url = new URL(API_URL);
                 url.searchParams.append('action', action);
                 Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
-                const response = await fetch(url.toString(), { method: 'GET', mode: 'cors' });
-                if (!response.ok) throw new Error('Network response was not ok');
+                
+                const response = await fetch(url.toString(), {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Network response was not ok: ' + response.status);
+                }
+                
                 return await response.json();
             } catch (error) {
                 console.error('API Error:', error);
@@ -689,6 +698,7 @@
             
             try {
                 const response = await apiCall('login', { engineer, pin });
+                
                 if (response.success) {
                     currentUser = response.data;
                     if (currentUser.role === 'Manager') {
@@ -703,7 +713,8 @@
                     errorDiv.classList.add('show');
                 }
             } catch (error) {
-                errorDiv.textContent = 'Connection error. Please try again.';
+                console.error('Login error:', error);
+                errorDiv.textContent = 'Connection error. Please check your internet and try again.';
                 errorDiv.classList.add('show');
             } finally {
                 hideLoading();
@@ -718,8 +729,11 @@
                 if (response.success) {
                     vanStock = response.data;
                     showCheckForm();
+                } else {
+                    alert('Error loading stock data: ' + response.message);
                 }
             } catch (error) {
+                console.error('Load stock error:', error);
                 alert('Error loading stock data. Please try again.');
             } finally {
                 hideLoading();
@@ -834,7 +848,8 @@
                     alert('Error submitting stock check: ' + response.message);
                 }
             } catch (error) {
-                alert('Connection error. Please try again.');
+                console.error('Submit error:', error);
+                alert('Connection error submitting stock check. Please try again.');
             } finally {
                 hideLoading();
             }
@@ -880,7 +895,7 @@
             }
         }
 
-        console.log('Stock Check Tool Ready');
+        console.log('Stock Check Tool Ready - Using GET method like Van Stock Pro');
     </script>
 </body>
 </html>
