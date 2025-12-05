@@ -151,6 +151,7 @@
             <div style="text-align: center;"><button class="btn-new-check" onclick="location.reload()">Start New Check</button></div>
         </div>
     </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbz5rCfWVoQUO8SYFb0dg5LGC-IlTbpKAg_yW7TSdz4VjmM8jvaa2K94xJ5dxvL_W4DQ/exec';
         let currentUser = null, vanStock = [], stockCheckData = {};
@@ -158,12 +159,16 @@
         function hideLoading() { document.getElementById('loading').classList.remove('active'); }
         
         async function apiCall(action, params = {}) {
-            const url = new URL(API_URL);
-            url.searchParams.append('action', action);
-            Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
-            const response = await fetch(url.toString());
-            if (!response.ok) throw new Error('Network error');
-            return await response.json();
+            return new Promise((resolve, reject) => {
+                $.ajax({
+                    url: API_URL,
+                    method: 'GET',
+                    dataType: 'json',
+                    data: { action, ...params },
+                    success: resolve,
+                    error: (xhr, status, error) => reject(new Error(error || status))
+                });
+            });
         }
         
         async function handleLogin(event) {
@@ -268,18 +273,33 @@
             });
             showLoading();
             try {
-                // Try multiple submission methods
-                let response;
-                try {
-                    // Method 1: Direct GET with encoded data
-                    response = await apiCall('submitStockCheck', { data: JSON.stringify(stockCheckData) });
-                } catch (e1) {
-                    console.log('Method 1 failed, trying method 2...', e1);
-                    // Method 2: Use Google's redirect endpoint
-                    const url = 'https://script.google.com/macros/s/AKfycbz5rCfWVoQUO8SYFb0dg5LGC-IlTbpKAg_yW7TSdz4VjmM8jvaa2K94xJ5dxvL_W4DQ/exec?action=submitStockCheck&data=' + encodeURIComponent(JSON.stringify(stockCheckData));
-                    const res = await fetch(url, { method: 'GET', redirect: 'follow' });
-                    response = await res.json();
-                }
+                // Using jQuery for better CORS handling
+                const response = await new Promise((resolve, reject) => {
+                    $.ajax({
+                        url: API_URL,
+                        method: 'GET',
+                        dataType: 'jsonp',  // JSONP bypasses CORS!
+                        data: {
+                            action: 'submitStockCheck',
+                            data: JSON.stringify(stockCheckData)
+                        },
+                        success: resolve,
+                        error: (xhr, status, error) => {
+                            // Try fallback without JSONP
+                            $.ajax({
+                                url: API_URL,
+                                method: 'GET',
+                                dataType: 'json',
+                                data: {
+                                    action: 'submitStockCheck',
+                                    data: JSON.stringify(stockCheckData)
+                                },
+                                success: resolve,
+                                error: (xhr2, status2, error2) => reject(new Error(error2 || status2))
+                            });
+                        }
+                    });
+                });
                 
                 if (response && response.success) {
                     showResults();
@@ -287,8 +307,8 @@
                     alert('Error: ' + (response ? response.message : 'Unknown error'));
                 }
             } catch (error) {
-                console.error('All methods failed:', error);
-                alert('Unable to submit stock check.\n\nThis might be a temporary network issue.\n\nPlease:\n1. Check your internet connection\n2. Try again in a moment\n3. Contact IT if problem persists\n\nError: ' + error.message);
+                console.error('Submit failed:', error);
+                alert('Unable to submit. This is likely a temporary network issue. Please try again.\n\nError: ' + error.message);
             } finally {
                 hideLoading();
             }
