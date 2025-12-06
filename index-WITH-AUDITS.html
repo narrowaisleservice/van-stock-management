@@ -1341,11 +1341,35 @@
     </div>
 
     <script>
-        const API_URL = 'https://script.google.com/macros/s/AKfycbzTRawzqqCP2Lu8r7DyVks-F6t7-u5xd8F2x42zZzwqAILDG7y6xFA1P-F1G9LO2GKl/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbz5rCfWVoQUO8SYFb0dg5LGC-IlTbpKAg_yW7TSdz4VjmM8jvaa2K94xJ5dxvL_W4DQ/exec';
         let currentUser = null;
         let currentStock = [];
         let allVansStock = {};
         let charts = {};
+        
+        // Van to Engineer Mapping
+        const vanEngineers = {
+            1: 'Aaron Dyson',
+            2: 'Brett Stockton',
+            3: 'Harry Shearstone',
+            4: 'Tom Barker',
+            5: 'Lewis Lockwood',
+            6: 'Keith Wilton',
+            7: 'Lance Duncan',
+            8: 'Pete King',
+            9: 'Graham Denman',
+            10: 'Rob Appleyard',
+            11: 'Mike Adams',
+            12: 'Mick Thornley',
+            13: 'David Williams',
+            14: 'Kevin Deakin'
+        };
+        
+        // Helper function to get van display name
+        function getVanDisplay(vanNum) {
+            const engineer = vanEngineers[vanNum];
+            return engineer ? `Van ${vanNum} - ${engineer}` : `Van ${vanNum}`;
+        }
 
         // Toast Notification System
         function showToast(message, type = 'info', duration = 3000) {
@@ -1668,13 +1692,13 @@
                 card.style.animationDelay = `${index * 0.05}s`;
                 card.innerHTML = `
                     <div class="van-icon-3d">🚐</div>
-                    <h4>Van ${vanNum}</h4>
+                    <h4>${getVanDisplay(vanNum)}</h4>
                     <p>${parts} items</p>
                     <p class="value">£${value.toFixed(2)}</p>
                 `;
                 card.onclick = () => {
                     showVanDetails(vanNum);
-                    showToast(`Loading Van ${vanNum} details...`, 'info', 2000);
+                    showToast(`Loading ${getVanDisplay(vanNum)} details...`, 'info', 2000);
                 };
                 vanSelector.appendChild(card);
             });
@@ -1685,7 +1709,7 @@
             const vanStock = allVansStock[vanNum];
             content.innerHTML = `
                 <button class="btn btn-info" onclick="loadDashboard()" style="margin-bottom: 20px;">← Back to Dashboard</button>
-                <h2 style="margin-bottom: 20px; color: #ffffff;">🚐 Van ${vanNum} - Stock Details</h2>
+                <h2 style="margin-bottom: 20px; color: #ffffff;">🚐 ${getVanDisplay(vanNum)} - Stock Details</h2>
                 
                 <div class="search-container">
                     <div class="search-row">
@@ -2429,4 +2453,3 @@
     </script>
 </body>
 </html>
-
