@@ -1387,7 +1387,7 @@
                 const url = new URL(API_URL);
                 url.searchParams.append('action', action);
                 Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
-                const response = await fetch(url.toString(), { method: 'GET', mode: 'cors' });
+                const response = await fetch(url.toString());
                 if (!response.ok) throw new Error('Network response was not ok');
                 return await response.json();
             } catch (error) {
@@ -2312,7 +2312,7 @@
                         <select id="filterVan" onchange="filterAuditHistory()">
                             <option value="all">All Vans</option>
                             ${[...new Set(audits.map(a => a.vanNumber))].sort((a,b) => a-b).map(van => 
-                                \`<option value="\${van}">Van \${van}</option>\`
+                                `<option value="${van}">Van ${van}</option>`
                             ).join('')}
                         </select>
                     </div>
@@ -2330,7 +2330,7 @@
                         <select id="filterEngineer" onchange="filterAuditHistory()">
                             <option value="all">All Engineers</option>
                             ${[...new Set(audits.map(a => a.engineer))].sort().map(eng => 
-                                \`<option value="\${eng}">\${eng}</option>\`
+                                `<option value="${eng}">${eng}</option>`
                             ).join('')}
                         </select>
                     </div>
