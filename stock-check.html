@@ -776,6 +776,7 @@
                             min="0" 
                             placeholder="Enter quantity..."
                             data-part="${item.PartNumber}"
+                            data-desc="${item.PartDescription}"
                             data-system="${item.Quantity}"
                             oninput="updateProgress()"
                         >
@@ -830,11 +831,13 @@
             
             inputs.forEach(input => {
                 const partNumber = input.dataset.part;
+                const partDescription = input.dataset.desc;
                 const systemQty = parseInt(input.dataset.system);
                 const actualQty = parseInt(input.value);
                 
                 stockCheckData.parts.push({
                     partNumber: partNumber,
+                    partDescription: partDescription,
                     systemQty: systemQty,
                     actualQty: actualQty,
                     variance: actualQty - systemQty
@@ -878,12 +881,11 @@
                 html += '<div class="discrepancy-list">';
                 
                 discrepancies.forEach(disc => {
-                    const part = vanStock.find(p => p.PartNumber === disc.partNumber);
                     const varClass = disc.variance < 0 ? 'negative' : 'positive';
                     html += `
                         <div class="discrepancy-item ${varClass}">
                             <div class="disc-part">${disc.partNumber}</div>
-                            <div class="disc-desc">${part.PartDescription}</div>
+                            <div class="disc-desc">${disc.partDescription}</div>
                             <div class="disc-values">
                                 <div><span>System:</span> ${disc.systemQty}</div>
                                 <div><span>Counted:</span> ${disc.actualQty}</div>
