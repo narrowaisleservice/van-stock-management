@@ -1362,6 +1362,7 @@
         const API_URL = 'https://script.google.com/macros/s/AKfycbzTRawzqqCP2Lu8r7DyVks-F6t7-u5xd8F2x42zZzwqAILDG7y6xFA1P-F1G9LO2GKl/exec';
         let currentUser = null;
         let pendingAudits = []; // Store audits for export
+        let completedAudits = []; // Store completed audits for export
         let currentStock = [];
         let allVansStock = {};
         let charts = {};
@@ -2345,6 +2346,91 @@
             }
         }
         
+        function exportCompletedAuditToExcel(index) {
+            try {
+                const audit = completedAudits[index];
+                if (!audit) {
+                    showToast('Audit not found!', 'error');
+                    return;
+                }
+                
+                // Create workbook
+                const wb = XLSX.utils.book_new();
+                
+                // Prepare audit data
+                const auditInfo = [
+                    ['Van Stock Audit Report'],
+                    [''],
+                    ['Audit ID:', audit.auditID],
+                    ['Engineer:', audit.engineer],
+                    ['Van Number:', 'Van ' + audit.vanNumber],
+                    ['Audit Date:', new Date(audit.timestamp).toLocaleString('en-GB')],
+                    ['Status:', audit.status],
+                    ['Reviewed By:', audit.approvedBy || 'N/A'],
+                    ['Review Date:', audit.approvedDate ? new Date(audit.approvedDate).toLocaleString('en-GB') : 'N/A'],
+                    [''],
+                    ['Summary:'],
+                    ['Total Parts Checked:', audit.parts.length],
+                    ['Discrepancies Found:', audit.parts.filter(p => p.variance !== 0).length],
+                    ['Accuracy Rate:', Math.round(((audit.parts.length - audit.parts.filter(p => p.variance !== 0).length) / audit.parts.length) * 100) + '%'],
+                    ['']
+                ];
+                
+                // Add notes if they exist
+                if (audit.notes) {
+                    auditInfo.push(['Engineer Notes:', audit.notes]);
+                    auditInfo.push(['']);
+                }
+                
+                // Add rejection reason if rejected
+                if (audit.status === 'Rejected' && audit.rejectionReason) {
+                    auditInfo.push(['Rejection Reason:', audit.rejectionReason]);
+                    auditInfo.push(['']);
+                }
+                
+                // Prepare parts data
+                const partsHeader = ['Part Number', 'Description', 'System Qty', 'Counted Qty', 'Variance', 'Status'];
+                const partsData = audit.parts.map(part => [
+                    part.partNumber,
+                    part.partDescription,
+                    part.systemQty,
+                    part.actualQty,
+                    part.variance,
+                    part.variance === 0 ? 'Match' : (part.variance > 0 ? 'Overage' : 'Shortage')
+                ]);
+                
+                // Combine all data
+                const allData = [...auditInfo, partsHeader, ...partsData];
+                
+                // Create worksheet
+                const ws = XLSX.utils.aoa_to_sheet(allData);
+                
+                // Set column widths
+                ws['!cols'] = [
+                    { wch: 20 },  // Part Number
+                    { wch: 40 },  // Description
+                    { wch: 12 },  // System Qty
+                    { wch: 12 },  // Counted Qty
+                    { wch: 10 },  // Variance
+                    { wch: 12 }   // Status
+                ];
+                
+                // Add worksheet to workbook
+                XLSX.utils.book_append_sheet(wb, ws, 'Audit Report');
+                
+                // Generate filename with status
+                const filename = `Van_Stock_Audit_${audit.status}_${audit.auditID}_Van${audit.vanNumber}_${new Date().toISOString().split('T')[0]}.xlsx`;
+                
+                // Save file
+                XLSX.writeFile(wb, filename);
+                
+                showToast('Excel file downloaded successfully!', 'success');
+            } catch (error) {
+                console.error('Export error:', error);
+                showToast('Error exporting to Excel: ' + error.message, 'error');
+            }
+        }
+        
         async function approveAudit(auditID) {
             if (!confirm('Approve this audit and update van stock?\n\nThis will overwrite current quantities with the counted values.')) {
                 return;
@@ -2412,6 +2498,7 @@
         }
 
         function renderAuditHistory(audits) {
+            completedAudits = audits; // Store for export
             const content = document.getElementById('mainContent');
             
             if (audits.length === 0) {
@@ -2463,7 +2550,7 @@
                 <div id="auditHistoryList">
             `;
             
-            audits.forEach(audit => {
+            audits.forEach((audit, index) => {
                 const discrepancies = audit.parts.filter(p => p.variance !== 0);
                 const totalParts = audit.parts.length;
                 const accuracy = Math.round(((totalParts - discrepancies.length) / totalParts) * 100);
@@ -2515,6 +2602,10 @@
                                 <div class="audit-stat-label">Accuracy</div>
                                 <div class="audit-stat-value ${accuracy >= 90 ? 'good' : 'bad'}">${accuracy}%</div>
                             </div>
+                        </div>
+                        
+                        <div class="audit-actions" style="justify-content: center; margin-top: 20px;">
+                            <button class="btn-export" onclick="exportCompletedAuditToExcel(${index})">📥 Export to Excel</button>
                         </div>
                     </div>
                 `;
