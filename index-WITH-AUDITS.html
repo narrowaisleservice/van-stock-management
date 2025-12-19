@@ -6,6 +6,8 @@
     <title>Van Stock Management - Pro</title>
     <!-- Chart.js for animated charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <!-- SheetJS for Excel export -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -1155,6 +1157,22 @@
             justify-content: flex-end;
         }
 
+        .btn-export {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-export:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+
         .btn-approve {
             padding: 12px 30px;
             background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
@@ -1343,6 +1361,7 @@
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbzTRawzqqCP2Lu8r7DyVks-F6t7-u5xd8F2x42zZzwqAILDG7y6xFA1P-F1G9LO2GKl/exec';
         let currentUser = null;
+        let pendingAudits = []; // Store audits for export
         let currentStock = [];
         let allVansStock = {};
         let charts = {};
@@ -2154,6 +2173,7 @@
         }
 
         function renderPendingAudits(audits) {
+            pendingAudits = audits; // Store for export
             const content = document.getElementById('mainContent');
             
             if (audits.length === 0) {
@@ -2169,7 +2189,7 @@
             
             let html = '<h2 style="color: #ffffff; margin-bottom: 30px;">📋 Pending Stock Check Audits</h2>';
             
-            audits.forEach(audit => {
+            audits.forEach((audit, index) => {
                 const discrepancies = audit.parts.filter(p => p.variance !== 0);
                 const totalParts = audit.parts.length;
                 const accuracy = Math.round(((totalParts - discrepancies.length) / totalParts) * 100);
@@ -2237,6 +2257,7 @@
                         ` : ''}
                         
                         <div class="audit-actions">
+                            <button class="btn-export" onclick="exportAuditToExcel(${index})">📥 Export to Excel</button>
                             <button class="btn-reject" onclick="rejectAudit('${audit.auditID}')">✕ Reject</button>
                             <button class="btn-approve" onclick="approveAudit('${audit.auditID}')">✓ Approve & Update Stock</button>
                         </div>
@@ -2247,6 +2268,83 @@
             content.innerHTML = html;
         }
 
+        function exportAuditToExcel(index) {
+            try {
+                const audit = pendingAudits[index];
+                if (!audit) {
+                    showToast('Audit not found!', 'error');
+                    return;
+                }
+                
+                // Create workbook
+                const wb = XLSX.utils.book_new();
+                
+                // Prepare audit data
+                const auditInfo = [
+                    ['Van Stock Audit Report'],
+                    [''],
+                    ['Audit ID:', audit.auditID],
+                    ['Engineer:', audit.engineer],
+                    ['Van Number:', 'Van ' + audit.vanNumber],
+                    ['Timestamp:', new Date(audit.timestamp).toLocaleString('en-GB')],
+                    ['Status:', 'Pending Review'],
+                    [''],
+                    ['Summary:'],
+                    ['Total Parts Checked:', audit.parts.length],
+                    ['Discrepancies Found:', audit.parts.filter(p => p.variance !== 0).length],
+                    ['Accuracy Rate:', Math.round(((audit.parts.length - audit.parts.filter(p => p.variance !== 0).length) / audit.parts.length) * 100) + '%'],
+                    ['']
+                ];
+                
+                // Add notes if they exist
+                if (audit.notes) {
+                    auditInfo.push(['Engineer Notes:', audit.notes]);
+                    auditInfo.push(['']);
+                }
+                
+                // Prepare parts data
+                const partsHeader = ['Part Number', 'Description', 'System Qty', 'Counted Qty', 'Variance', 'Status'];
+                const partsData = audit.parts.map(part => [
+                    part.partNumber,
+                    part.partDescription,
+                    part.systemQty,
+                    part.actualQty,
+                    part.variance,
+                    part.variance === 0 ? 'Match' : (part.variance > 0 ? 'Overage' : 'Shortage')
+                ]);
+                
+                // Combine all data
+                const allData = [...auditInfo, partsHeader, ...partsData];
+                
+                // Create worksheet
+                const ws = XLSX.utils.aoa_to_sheet(allData);
+                
+                // Set column widths
+                ws['!cols'] = [
+                    { wch: 20 },  // Part Number
+                    { wch: 40 },  // Description
+                    { wch: 12 },  // System Qty
+                    { wch: 12 },  // Counted Qty
+                    { wch: 10 },  // Variance
+                    { wch: 12 }   // Status
+                ];
+                
+                // Add worksheet to workbook
+                XLSX.utils.book_append_sheet(wb, ws, 'Audit Report');
+                
+                // Generate filename
+                const filename = `Van_Stock_Audit_${audit.auditID}_Van${audit.vanNumber}_${new Date().toISOString().split('T')[0]}.xlsx`;
+                
+                // Save file
+                XLSX.writeFile(wb, filename);
+                
+                showToast('Excel file downloaded successfully!', 'success');
+            } catch (error) {
+                console.error('Export error:', error);
+                showToast('Error exporting to Excel: ' + error.message, 'error');
+            }
+        }
+        
         async function approveAudit(auditID) {
             if (!confirm('Approve this audit and update van stock?\n\nThis will overwrite current quantities with the counted values.')) {
                 return;
